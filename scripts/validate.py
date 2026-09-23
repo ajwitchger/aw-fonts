@@ -34,6 +34,7 @@ def main() -> int:
     print(f"  families: {len(inventory.families)}")
     print(f"  fonts:    {len(inventory.fonts)}")
     print(f"  profiles: {len(inventory.profiles)}")
+    print(f"  default:  {inventory.default_profile}")
     if not inventory.fonts:
         print("  note:     empty font inventory allowed for repository scaffolding")
     print("RESULT: PASS")
