@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from hashlib import sha256
+import json
 from pathlib import Path
 import plistlib
 import struct
+import subprocess
 import tempfile
 import unittest
 
@@ -35,6 +37,44 @@ def make_sfnt(ps_name: str) -> bytes:
     return header + record + name_table
 
 
+def write_config(root: Path, default_profile: str = "all") -> None:
+    (root / "aw-fonts.toml").write_text(
+        f"""[repository]
+default_profile = "{default_profile}"
+""",
+        encoding="utf-8",
+    )
+
+
+def write_all_profile(root: Path) -> None:
+    (root / "profiles").mkdir(exist_ok=True)
+    (root / "profiles" / "all.toml").write_text(
+        """[profile]
+id = "all"
+display_name = "All Fonts"
+description = "All fonts."
+include = ["*"]
+""",
+        encoding="utf-8",
+    )
+
+
+def write_example_family(root: Path) -> None:
+    family = root / "fonts" / "example"
+    family.mkdir(parents=True)
+    (family / "font.toml").write_text(
+        """[font]
+family = "Example"
+source = "https://example.invalid/example"
+license = "OFL-1.1"
+license_file = "OFL.txt"
+""",
+        encoding="utf-8",
+    )
+    (family / "OFL.txt").write_text("license\n", encoding="utf-8")
+    (family / "Example.ttf").write_bytes(make_sfnt("Example-Regular"))
+
+
 class FontRepoTests(unittest.TestCase):
     def test_postscript_name(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -46,36 +86,35 @@ class FontRepoTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "fonts").mkdir()
-            (root / "profiles").mkdir()
-            (root / "profiles" / "all.toml").write_text(
-                """[profile]
-id = "all"
-display_name = "All Fonts"
-description = "All fonts."
-include = ["*"]
-""",
-                encoding="utf-8",
-            )
+            write_config(root)
+            write_all_profile(root)
+
             inventory = load_inventory(root)
             self.assertEqual(len(inventory.fonts), 0)
+            self.assertEqual(inventory.default_profile, "all")
             with self.assertRaisesRegex(ValidationError, "artifact builds require"):
                 load_inventory(root, require_fonts=True)
+
+    def test_default_profile_must_exist(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "fonts").mkdir()
+            write_config(root, default_profile="core")
+            write_all_profile(root)
+
+            with self.assertRaisesRegex(
+                ValidationError, "default profile `core` does not exist"
+            ):
+                load_inventory(root)
 
     def test_duplicate_postscript_names_are_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "fonts" / "one").mkdir(parents=True)
             (root / "fonts" / "two").mkdir(parents=True)
-            (root / "profiles").mkdir()
-            (root / "profiles" / "all.toml").write_text(
-                """[profile]
-id = "all"
-display_name = "All Fonts"
-description = "All fonts."
-include = ["*"]
-""",
-                encoding="utf-8",
-            )
+            write_config(root)
+            write_all_profile(root)
+
             for slug in ("one", "two"):
                 family = root / "fonts" / slug
                 (family / "font.toml").write_text(
@@ -98,29 +137,9 @@ license_file = "OFL.txt"
     def test_generated_profile_contains_only_font_payloads(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            family = root / "fonts" / "example"
-            family.mkdir(parents=True)
-            (root / "profiles").mkdir()
-            (root / "profiles" / "all.toml").write_text(
-                """[profile]
-id = "all"
-display_name = "All Fonts"
-description = "All fonts."
-include = ["*"]
-""",
-                encoding="utf-8",
-            )
-            (family / "font.toml").write_text(
-                """[font]
-family = "Example"
-source = "https://example.invalid/example"
-license = "OFL-1.1"
-license_file = "OFL.txt"
-""",
-                encoding="utf-8",
-            )
-            (family / "OFL.txt").write_text("license\n", encoding="utf-8")
-            (family / "Example.ttf").write_bytes(make_sfnt("Example-Regular"))
+            write_config(root)
+            write_all_profile(root)
+            write_example_family(root)
 
             inventory = load_inventory(root, require_fonts=True)
             profile = inventory.profiles[0]
@@ -140,6 +159,47 @@ license_file = "OFL.txt"
                 {child["PayloadType"] for child in parsed["PayloadContent"]},
                 {"com.apple.font"},
             )
+
+    def test_default_release_artifacts_are_byte_identical_aliases(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            write_config(root)
+            write_all_profile(root)
+            write_example_family(root)
+
+            output = root / "dist"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "build.py"),
+                    "--version",
+                    "v2026.09.1",
+                    "--source-ref",
+                    "deadbeef",
+                    "--repo-root",
+                    str(root),
+                    "--output",
+                    str(output),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, msg=result.stderr)
+
+            explicit_mobileconfig = output / "aw-fonts-all-v2026.09.1.mobileconfig"
+            alias_mobileconfig = output / "aw-fonts-v2026.09.1.mobileconfig"
+            explicit_zip = output / "aw-fonts-all-v2026.09.1.zip"
+            alias_zip = output / "aw-fonts-v2026.09.1.zip"
+
+            self.assertEqual(
+                explicit_mobileconfig.read_bytes(), alias_mobileconfig.read_bytes()
+            )
+            self.assertEqual(explicit_zip.read_bytes(), alias_zip.read_bytes())
+
+            manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["default_profile"], "all")
+            self.assertEqual(manifest["aliases"]["aw-fonts"]["profile"], "all")
 
 
 if __name__ == "__main__":

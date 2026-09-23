@@ -4,7 +4,7 @@ Versioned, validated collection of redistributable fonts and reproducible platfo
 
 ## Source of truth
 
-The repository stores font binaries once under `fonts/`. Profiles under `profiles/` select from that canonical inventory. Generated ZIP bundles, Apple configuration profiles, manifests, and checksums are release artifacts and are not committed.
+The repository stores font binaries once under `fonts/`. Profiles under `profiles/` select from that canonical inventory. `aw-fonts.toml` selects the repository's default deployment profile. Generated ZIP bundles, Apple configuration profiles, manifests, and checksums are release artifacts and are not committed.
 
 ```text
 fonts/ + profiles/
@@ -60,6 +60,25 @@ include = ["jetbrains-mono", "ibm-plex-mono"]
 
 A profile filename must match its `id`.
 
+### Default profile
+
+The unqualified `aw-fonts` artifact is an alias for one explicit profile. The pointer is defined once at the repository root:
+
+```toml
+# aw-fonts.toml
+[repository]
+default_profile = "all"
+```
+
+While only `all` exists, it is the default. Once a stable `core` profile is defined, the intended long-term configuration is:
+
+```toml
+[repository]
+default_profile = "core"
+```
+
+The alias is not another profile and contains no separately generated state. For each release, `aw-fonts-<version>.zip` and `aw-fonts-<version>.mobileconfig` are byte-for-byte copies of the selected profile's explicit artifacts. Validation fails if `default_profile` does not name an existing profile.
+
 ## Local validation
 
 Python 3.11 or newer is required.
@@ -84,7 +103,18 @@ python3 scripts/build.py \
   --output dist
 ```
 
-The builder creates one portable ZIP and one Apple `.mobileconfig` per profile, plus `manifest.json` and `SHA256SUMS`.
+The builder creates one portable ZIP and one Apple `.mobileconfig` per profile, plus an unqualified `aw-fonts` alias for the configured default profile, `manifest.json`, and `SHA256SUMS`.
+
+For example, while `all` is the default:
+
+```text
+aw-fonts-all-v2026.09.1.zip
+aw-fonts-all-v2026.09.1.mobileconfig
+aw-fonts-v2026.09.1.zip
+aw-fonts-v2026.09.1.mobileconfig
+```
+
+The two unqualified artifacts are byte-identical to their `all` counterparts. The release manifest records the resolved `default_profile` and alias relationship explicitly.
 
 ## Release
 

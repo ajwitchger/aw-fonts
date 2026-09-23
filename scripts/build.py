@@ -49,10 +49,13 @@ def main() -> int:
         "schema_version": 1,
         "version": args.version,
         "source_ref": args.source_ref,
+        "default_profile": inventory.default_profile,
         "profiles": [],
+        "aliases": {},
     }
 
     created: list[Path] = []
+    profile_artifacts: dict[str, tuple[Path, Path]] = {}
 
     try:
         for profile in inventory.profiles:
@@ -85,6 +88,7 @@ def main() -> int:
                 output=portable,
             )
             created.extend([mobileconfig, portable])
+            profile_artifacts[profile.id] = (mobileconfig, portable)
             release_manifest["profiles"].append(
                 {
                     "id": profile.id,
@@ -94,6 +98,24 @@ def main() -> int:
                     "portable_zip": portable.name,
                 }
             )
+
+        default_mobileconfig, default_portable = profile_artifacts[
+            inventory.default_profile
+        ]
+        alias_mobileconfig = output / f"aw-fonts-{args.version}.mobileconfig"
+        alias_portable = output / f"aw-fonts-{args.version}.zip"
+
+        shutil.copyfile(default_mobileconfig, alias_mobileconfig)
+        shutil.copyfile(default_portable, alias_portable)
+        created.extend([alias_mobileconfig, alias_portable])
+
+        release_manifest["aliases"] = {
+            "aw-fonts": {
+                "profile": inventory.default_profile,
+                "mobileconfig": alias_mobileconfig.name,
+                "portable_zip": alias_portable.name,
+            }
+        }
 
         manifest_path = output / "manifest.json"
         manifest_path.write_bytes(json_bytes(release_manifest))
