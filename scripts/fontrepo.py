@@ -425,24 +425,27 @@ def validate_mobileconfig(data: bytes) -> None:
     if not isinstance(children, list) or not children:
         raise ValidationError("generated profile contains no child payloads")
 
-    unexpected = sorted(
-        {
-            child.get("PayloadType")
-            for child in children
-            if not isinstance(child, dict)
-            or child.get("PayloadType") != "com.apple.font"
-        },
-        key=str,
-    )
+    unexpected: list[str] = []
+    for child in children:
+        if not isinstance(child, dict):
+            unexpected.append(type(child).__name__)
+            continue
+        payload_type = child.get("PayloadType")
+        if payload_type != "com.apple.font":
+            unexpected.append(str(payload_type))
+
     if unexpected:
         raise ValidationError(
-            f"generated profile contains unexpected payload type(s): {unexpected}"
+            "generated profile contains unexpected payload type(s): "
+            + ", ".join(sorted(unexpected))
         )
 
 
 def _zip_write_bytes(archive: zipfile.ZipFile, name: str, data: bytes) -> None:
     info = zipfile.ZipInfo(name, date_time=FIXED_ZIP_TIME)
-    info.compress_type = zipfile.ZIP_DEFLATED
+    # Store rather than deflate so identical inputs produce identical ZIP bytes
+    # independently of zlib implementation/version.
+    info.compress_type = zipfile.ZIP_STORED
     info.external_attr = 0o100644 << 16
     archive.writestr(info, data)
 
@@ -457,7 +460,9 @@ def build_portable_zip(
     family_slugs = sorted({font.family_slug for font in selected})
     with zipfile.ZipFile(output, "w") as archive:
         for font in selected:
-            name = f"fonts/{font.family_slug}/{font.path.name}"
+            family = inventory.families[font.family_slug]
+            within_family = font.path.relative_to(family.directory).as_posix()
+            name = f"fonts/{font.family_slug}/{within_family}"
             _zip_write_bytes(archive, name, font.path.read_bytes())
 
         for slug in family_slugs:
