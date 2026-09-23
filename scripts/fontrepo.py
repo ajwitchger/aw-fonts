@@ -62,6 +62,7 @@ class Inventory:
     families: dict[str, Family]
     fonts: tuple[Font, ...]
     profiles: tuple[Profile, ...]
+    default_profile: str
 
 
 def _require_string(mapping: dict, key: str, context: str) -> str:
@@ -268,6 +269,24 @@ def _load_families(root: Path) -> tuple[dict[str, Family], list[Font]]:
     return families, font_records
 
 
+def _load_repository_config(root: Path) -> str:
+    config_path = root / "aw-fonts.toml"
+    if not config_path.is_file():
+        raise ValidationError("missing required `aw-fonts.toml`")
+
+    data = _read_toml(config_path)
+    section = data.get("repository")
+    if not isinstance(section, dict):
+        raise ValidationError(f"{config_path}: missing `[repository]` table")
+
+    default_profile = _require_string(section, "default_profile", str(config_path))
+    if not PROFILE_ID_RE.fullmatch(default_profile):
+        raise ValidationError(
+            f"{config_path}: invalid default profile id `{default_profile}`"
+        )
+    return default_profile
+
+
 def _load_profiles(root: Path, families: dict[str, Family]) -> tuple[Profile, ...]:
     profiles_root = root / "profiles"
     if not profiles_root.is_dir():
@@ -337,8 +356,15 @@ def _load_profiles(root: Path, families: dict[str, Family]) -> tuple[Profile, ..
 
 def load_inventory(root: Path, *, require_fonts: bool = False) -> Inventory:
     root = root.resolve()
+    default_profile = _load_repository_config(root)
     families, font_records = _load_families(root)
     profiles = _load_profiles(root, families)
+
+    profile_ids = {profile.id for profile in profiles}
+    if default_profile not in profile_ids:
+        raise ValidationError(
+            f"aw-fonts.toml: default profile `{default_profile}` does not exist"
+        )
 
     if require_fonts and not font_records:
         raise ValidationError("no fonts found; artifact builds require at least one font")
@@ -348,6 +374,7 @@ def load_inventory(root: Path, *, require_fonts: bool = False) -> Inventory:
         families=families,
         fonts=tuple(sorted(font_records, key=lambda font: font.relative_path)),
         profiles=profiles,
+        default_profile=default_profile,
     )
 
 
