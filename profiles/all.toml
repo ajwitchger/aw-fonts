@@ -1,0 +1,5 @@
+[profile]
+id = "all"
+display_name = "All Fonts"
+description = "All validated fonts in the repository."
+include = ["*"]
