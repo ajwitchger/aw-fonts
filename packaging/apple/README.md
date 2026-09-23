@@ -10,3 +10,6 @@ The build performs a post-generation allowlist check and fails unless the only p
 - `com.apple.font`
 
 The profile contains no MDM, VPN, proxy, Wi-Fi, certificate, web-filter, or other configuration payload.
+
+
+For the configured repository default profile, the build also emits an unqualified `aw-fonts-<version>.mobileconfig` file. It is copied byte-for-byte from the explicit default-profile artifact; it is not generated from a second profile definition.
