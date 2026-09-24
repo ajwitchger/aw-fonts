@@ -1,0 +1,10 @@
+Powerline:
+    
+
+Common Nerd Font/private-use probes:
+         
+     
+
+Prompt combinations:
+   ~/src/aw-fonts   main 
+❯  main   modified
