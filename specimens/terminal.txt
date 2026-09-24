@@ -1,0 +1,22 @@
+~/src/aw-fonts on main
+❯ git status --short
+ M scripts/build.py
+?? fonts/example/
+
+drwxr-xr-x  12 user  staff   384 Sep 24 09:42 fonts
+-rw-r--r--   1 user  staff  4217 Sep 24 09:42 README.md
+
+PID      CPU      MEM      COMMAND
+12345    12.7%    3.1%     python3
+  987     1.2%    0.4%     ssh
+
+┌─────────────┬──────────┬──────────────┐
+│ Service     │ Status   │ Address      │
+├─────────────┼──────────┼──────────────┤
+│ dns01       │ PASS     │ 10.10.60.53  │
+│ dns02       │ PASS     │ 10.10.60.54  │
+└─────────────┴──────────┴──────────────┘
+
+[INFO] build complete
+[WARN] cache miss
+[FAIL] validation error
