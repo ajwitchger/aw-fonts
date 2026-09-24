@@ -1,0 +1,23 @@
+=> -> <- != !== == === <= >=
+&& || ?? ?. :: := ++ -- ** //
+() [] {} <> /\\/\\ |\\| || &&
+0O oO 1Il| 5S 8B 2Z
+foo_bar baz-qux snake_case kebab-case
+0123456789
+abcdefghijklmnopqrstuvwxyz
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+if (x != 0) {
+    result = foo->bar[index];
+}
+
+const answer = items
+    .filter(item => item.enabled)
+    .map(item => item.value ?? 0);
+
+fn main() {
+    println!("value={:?}", value);
+}
+
+def render(value: str | None) -> str:
+    return value if value is not None else "—"
