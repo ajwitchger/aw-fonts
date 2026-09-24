@@ -96,7 +96,7 @@ The harness references font files in place and does not copy them into `dist/`; 
 
 Reusable regression specimens live under `specimens/`. When a subtle issue appears in a terminal, editor, document, or application, add the exact triggering text there so it can be reproduced later.
 
-See [`tools/font-compare/README.md`](tools/font-compare/README.md) for the workflow and escalation paths to FontGoggles, Diffenator 2, and HarfBuzz.
+See [`tools/font-compare/README.md`](tools/font-compare/README.md) for the workflow and escalation paths to FontGoggles, Diffenator 3 / `diff3proof`, and HarfBuzz.
 
 ## Local validation
 
