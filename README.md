@@ -78,14 +78,25 @@ The unqualified `aw-fonts` artifact is an alias for one explicit profile. The po
 default_profile = "all"
 ```
 
-While only `all` exists, it is the default. Once a stable `core` profile is defined, the intended long-term configuration is:
-
-```toml
-[repository]
-default_profile = "core"
-```
+While only `all` exists, it is the default. If another deployment profile is intentionally chosen later, changing the alias requires only updating this pointer.
 
 The alias is not another profile and contains no separately generated state. For each release, `aw-fonts-<version>.zip` and `aw-fonts-<version>.mobileconfig` are byte-for-byte copies of the selected profile's explicit artifacts. Validation fails if `default_profile` does not name an existing profile.
+
+## Compare candidate fonts
+
+Before deciding which styles or variants belong in a deployment profile, generate the local comparison harness:
+
+```bash
+python3 scripts/compare_fonts.py --serve
+```
+
+It compares up to three repository fonts side by side against the same editable specimen, with controls for size, line height, ligatures, and kerning. It also reports equal-length ASCII width probes to expose practical monospaced/proportional differences.
+
+The harness references font files in place and does not copy them into `dist/`; the browser loads only the selected candidates. This keeps comparison practical even on a branch containing many candidate binaries.
+
+Reusable regression specimens live under `specimens/`. When a subtle issue appears in a terminal, editor, document, or application, add the exact triggering text there so it can be reproduced later.
+
+See [`tools/font-compare/README.md`](tools/font-compare/README.md) for the workflow and escalation paths to FontGoggles, Diffenator 2, and HarfBuzz.
 
 ## Local validation
 
