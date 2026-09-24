@@ -60,10 +60,10 @@ Unsupported font containers include:
 
 ```toml
 [profile]
-id = "development"
+id = "dev"
 display_name = "Development Fonts"
 description = "Fonts used on development machines."
-include = ["jetbrains-mono", "ibm-plex-mono"]
+include = ["font-fira-code-nerd-font", "font-iosevka-nerd-font",  "iosevka-aw-term"]
 ```
 
 A profile filename must match its `id`.
