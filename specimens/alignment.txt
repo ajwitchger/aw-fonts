@@ -1,0 +1,20 @@
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+0000000000000000
+WWWWWWWWWWWWWWWW
+||||||||||||||||
+................
+++++++++++++++++
+----------------
+
+000000 | zero
+111111 | one
+mmmmmm | em
+iiiiii | eye
+WWWWWW | double-u
+
+1234567890123456789012345678901234567890
+..........|.........|.........|.........|
+alpha     | 001 | left
+bravo     | 002 | center
+charlie   | 003 | right
