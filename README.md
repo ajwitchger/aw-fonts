@@ -44,7 +44,15 @@ license_file = "OFL.txt"
 
 Repository policy requires every included font to be open source and publicly redistributable. Validation verifies that license metadata and the referenced license file are present; it does **not** make a legal determination about the declared license.
 
-Supported font containers are `.ttf` and `.otf`. `.ttc`, `.otc`, `.woff`, and `.woff2` are rejected.
+Supported font containers:
+- `.ttf`
+- `.otf`
+
+Unsupported font containers include: 
+- `.ttc`
+- `.otc`
+- `.woff`
+- `.woff2`
 
 ## Profiles
 
